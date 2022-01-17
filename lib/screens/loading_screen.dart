@@ -13,7 +13,7 @@ class Loading extends StatefulWidget {
 
 class _LoadingState extends State<Loading> with TickerProviderStateMixin {
   late AnimationController _controller; //progress bar를 위한 _controller
-  Map _stampMap = {};
+  List _stampList = [];
   @override
   void initState() {
     //gps좌표 받아오기(사진찍을때만 필요한가...)
@@ -23,13 +23,13 @@ class _LoadingState extends State<Loading> with TickerProviderStateMixin {
     )..addListener(() {
         setState(() {
           // progress bar가 다 찼고, 유저의 스탬프를 받아왔다면 다음화면으로
-          if (_controller.isCompleted & _stampMap.isNotEmpty) {
+          if (_controller.isCompleted && _stampList.isNotEmpty) {
             print('loading complt');
-            print('data: ${_stampMap}');
+            print('data: ${_stampList}');
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(
-                  builder: (context) => stampScreen(stampData: _stampMap)),
+                  builder: (context) => stampScreen(stampData: _stampList)),
               (route) => false,
             );
           }
@@ -59,10 +59,10 @@ class _LoadingState extends State<Loading> with TickerProviderStateMixin {
   Future<void> LoadingData() async {
     //get user stamp data
     try {
-      _stampMap = await getStamp();
+      _stampList = await getStamp();
       await Future.delayed(Duration(seconds: 5));
       print(_controller.isCompleted);
-      print(_stampMap.isEmpty);
+      print(_stampList.isEmpty);
     } catch (err) {
       print('error: from get user stamp data, retry get data');
     }

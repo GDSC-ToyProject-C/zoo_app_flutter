@@ -12,6 +12,6 @@ double getScaleHeight(BuildContext context) {
   return height;
 }
 
-final int MAX_ANIMAL = 15;
-var temp = List<String>.filled(13, 0.toString(), growable: true);
-final List<String> animal_list = ['giraffe', 'lion']..addAll(temp);
+var temp = List<String>.filled(12, 0.toString(), growable: true);
+final List<String> animal_list = ['giraffe', '???', 'lion']..addAll(temp);
+final int MAX_ANIMAL = animal_list.length;
