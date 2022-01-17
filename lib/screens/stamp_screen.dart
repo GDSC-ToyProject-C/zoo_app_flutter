@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:zoo_app/custom_widget/child_fab.dart';
 import '../custom_widget/expandable_fab.dart';
-import 'package:zoo_app/size.dart';
+import '../size.dart';
+import '../custom_widget/stamp_tile.dart';
+import './image_check_screen.dart';
 
 class stampScreen extends StatefulWidget {
   final dynamic stampData;
@@ -12,6 +15,8 @@ class stampScreen extends StatefulWidget {
 }
 
 class _stampScreenState extends State<stampScreen> {
+  final ImagePicker _picker = ImagePicker();
+
   @override
   void initState() {
     //그리드뷰 만들때 참고
@@ -51,7 +56,7 @@ class _stampScreenState extends State<stampScreen> {
           //카메라 버튼
           ChildActionButton(
             onpressed: () {
-              //go to camera
+              pickImage(true);
             },
             icon: Icon(Icons.camera_alt_outlined),
           ),
@@ -59,13 +64,36 @@ class _stampScreenState extends State<stampScreen> {
           //갤러리 버튼
           ChildActionButton(
             onpressed: () {
-              //go to album
+              pickImage(false);
             },
             icon: Icon(Icons.photo_library_outlined),
           ),
         ],
       ),
     );
+  }
+
+  void pickImage(bool isCam) async {
+    final XFile? _image;
+    try {
+      if (isCam) {
+        _image = await _picker.pickImage(source: ImageSource.camera);
+      } else {
+        _image = await _picker.pickImage(source: ImageSource.gallery);
+      }
+      if (_image != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ImageCheckScreen(
+              image: _image!,
+            ),
+          ),
+        );
+      }
+    } catch (err) {
+      print('err: from get Image');
+    }
   }
 
   Widget stampPage() {
@@ -81,12 +109,11 @@ class _stampScreenState extends State<stampScreen> {
             alignment: Alignment.topCenter,
             children: [
               //갈색 배경(제일 아래)
-              FirstStampBackground(),
+              FirstStampBackground(context),
 
               //베이지 배경 컨테이너(공백, 베이지 배경)
-              SecondStampBackground(),
-
-              //그리드뷰(스크롤가능)
+              //그리드 뷰 포함
+              SecondStampBackground(context, StampGridView(), '동물스탬프'),
             ],
           ),
           //스탬프 개수 count
@@ -151,59 +178,86 @@ class _stampScreenState extends State<stampScreen> {
     );
   }
 
-  Column SecondStampBackground() {
-    return Column(
-      children: [
-        Column(
-          children: [
-            //두 배경 사이 위쪽 공백
-            SizedBox(
-              height: 8 * getScaleHeight(context),
-            ),
-
-            //베이지 배경
-            Container(
-              margin: EdgeInsets.only(bottom: 8 * getScaleHeight(context)),
-              width: 338 * getScaleWidth(context),
-              height: 440 * getScaleHeight(context),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.all(Radius.circular(18)),
-                color: const Color(0xffd6d2cb),
-              ),
-            ),
-            // 동물스탬프
-            Text(
-              "동물스탬프",
-              style: const TextStyle(
-                color: const Color(0xfffefffb),
-                fontWeight: FontWeight.w400,
-                fontFamily: "NotoSans",
-                fontStyle: FontStyle.normal,
-                fontSize: 20.0,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Container FirstStampBackground() {
+  Widget StampGridView() {
     return Container(
-      width: 350 * getScaleWidth(context),
-      height: 500 * getScaleHeight(context),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.all(Radius.circular(18)),
-        border: Border.all(color: const Color(0xff707070), width: 1),
-        boxShadow: [
-          BoxShadow(
-              color: const Color(0xcc000000),
-              offset: Offset(0, 3),
-              blurRadius: 6,
-              spreadRadius: 0)
-        ],
-        color: const Color(0xffa69988),
-      ),
+      padding: EdgeInsets.fromLTRB(30, 5, 30, 5),
+      child: GridView.builder(
+          scrollDirection: Axis.vertical,
+          itemCount: MAX_ANIMAL,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 120 *
+                getScaleWidth(context) /
+                134 *
+                getScaleHeight(context), //tile의 비율
+            mainAxisSpacing: 25 * getScaleHeight(context), //수평 padding
+            crossAxisSpacing: 28 * getScaleWidth(context), //수직 padding
+          ),
+          itemBuilder: (BuildContext context, int idx) {
+            for (String name in widget.stampData) {
+              if (animal_list[idx] == name) {
+                return StampTile(animalName: animal_list[idx]);
+              }
+            }
+            return StampTile(animalName: 'null');
+          }),
     );
   }
+}
+
+Column SecondStampBackground(BuildContext context, Widget widget, String text) {
+  return Column(
+    children: [
+      Column(
+        children: [
+          //두 배경 사이 위쪽 공백
+          SizedBox(
+            height: 8 * getScaleHeight(context),
+          ),
+
+          //베이지 배경
+          Container(
+            margin: EdgeInsets.only(bottom: 8 * getScaleHeight(context)),
+            width: 338 * getScaleWidth(context),
+            height: 440 * getScaleHeight(context),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.all(Radius.circular(18)),
+              color: const Color(0xffd6d2cb),
+            ),
+            child: widget,
+          ),
+          // 동물스탬프
+          Text(
+            text,
+            style: const TextStyle(
+              color: const Color(0xfffefffb),
+              fontWeight: FontWeight.w400,
+              fontFamily: "NotoSans",
+              fontStyle: FontStyle.normal,
+              fontSize: 20.0,
+            ),
+          ),
+        ],
+      ),
+    ],
+  );
+}
+
+Container FirstStampBackground(BuildContext context) {
+  return Container(
+    width: 350 * getScaleWidth(context),
+    height: 500 * getScaleHeight(context),
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.all(Radius.circular(18)),
+      border: Border.all(color: const Color(0xff707070), width: 1),
+      boxShadow: [
+        BoxShadow(
+            color: const Color(0xcc000000),
+            offset: Offset(0, 3),
+            blurRadius: 6,
+            spreadRadius: 0)
+      ],
+      color: const Color(0xffa69988),
+    ),
+  );
 }
