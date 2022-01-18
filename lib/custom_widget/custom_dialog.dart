@@ -81,19 +81,18 @@ class _CustomDialogState extends State<CustomDialog> {
                 ),
               ],
             ),
-            if (widget.stampPossible)
-              SizedBox(height: 17 * getScaleHeight(context)),
-            if (!widget.stampPossible)
-              Text(
-                "(동물원 안에 있지 않아 스탬프를 획득하실 수 없습니다)",
-                style: const TextStyle(
-                  color: const Color(0xff343435),
-                  fontWeight: FontWeight.w400,
-                  fontFamily: "NotoSans",
-                  fontStyle: FontStyle.normal,
-                  fontSize: 9.0,
-                ),
-              ),
+            widget.stampPossible
+                ? SizedBox(height: 17 * getScaleHeight(context))
+                : Text(
+                    "(동물원 안에 있지 않아 스탬프를 획득하실 수 없습니다)",
+                    style: const TextStyle(
+                      color: const Color(0xff343435),
+                      fontWeight: FontWeight.w400,
+                      fontFamily: "NotoSans",
+                      fontStyle: FontStyle.normal,
+                      fontSize: 9.0,
+                    ),
+                  ),
 
             //버튼 컨테이너
             Row(
@@ -122,10 +121,12 @@ class _CustomDialogState extends State<CustomDialog> {
                     //go to info page
                     //크롤링 할지 말지?
                     if (widget.stampPossible) {
+                      //동물원 안에 있다면 DB에 스탬프 등록
                       await addStamp('lion')
-                          .whenComplete(() => Navigator.pop(context, false));
+                          .whenComplete(() => Navigator.pop(context, true));
                     } else {
-                      Navigator.pop(context, false);
+                      //아니라면 등록하지않음
+                      Navigator.pop(context, true);
                     }
                   },
                 ),

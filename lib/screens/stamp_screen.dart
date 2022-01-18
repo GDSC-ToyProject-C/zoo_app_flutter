@@ -8,20 +8,14 @@ import '../custom_widget/stamp_tile.dart';
 import './image_info_screen.dart';
 
 class stampScreen extends StatefulWidget {
-  final List stampData;
-  stampScreen({required this.stampData});
-
   @override
   State<stampScreen> createState() => _stampScreenState();
 }
 
 class _stampScreenState extends State<stampScreen> {
   final ImagePicker _picker = ImagePicker();
-  late List changedStampData;
   @override
   void initState() {
-    print(widget.stampData);
-    changedStampData = widget.stampData;
     super.initState();
   }
 
@@ -70,11 +64,9 @@ class _stampScreenState extends State<stampScreen> {
   void pickImage(bool isCam) async {
     final XFile? _image;
     try {
-      if (isCam) {
-        _image = await _picker.pickImage(source: ImageSource.camera);
-      } else {
-        _image = await _picker.pickImage(source: ImageSource.gallery);
-      }
+      _image = await _picker.pickImage(
+          source: isCam ? ImageSource.camera : ImageSource.gallery);
+
       if (_image != null) {
         await Navigator.push(
           context,
@@ -99,14 +91,11 @@ class _stampScreenState extends State<stampScreen> {
     return FutureBuilder(
         future: getStamp(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return CircularProgressIndicator();
-          } else if (snapshot.hasError) {
+          if (snapshot.hasError) {
             return Text('err');
           }
           print('snap');
           print(snapshot.data);
-          changedStampData.clear();
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
@@ -119,23 +108,27 @@ class _stampScreenState extends State<stampScreen> {
                   alignment: Alignment.topCenter,
                   children: [
                     //갈색 배경(제일 아래)
-                    FirstStampBackground(context),
+                    _FirstStampBackground(),
 
                     //베이지 배경 컨테이너(공백, 베이지 배경)
                     //그리드 뷰 포함
-                    SecondStampBackground(
-                        context, StampGridView(snapshot.data), '동물스탬프'),
+                    _SecondStampBackground(
+                        snapshot.hasData
+                            ? _StampGridView(snapshot.data)
+                            : CircularProgressIndicator(),
+                        '동물스탬프')
                   ],
                 ),
                 //스탬프 개수 count
-                ViewStampCount(snapshot.data),
+
+                _ViewStampCount(snapshot.hasData ? snapshot.data : []),
               ],
             ),
           );
         });
   }
 
-  Widget ViewStampCount(dynamic stemp) {
+  Widget _ViewStampCount(dynamic stamp) {
     return Container(
       alignment: Alignment.bottomLeft,
       margin: EdgeInsets.fromLTRB(
@@ -175,7 +168,7 @@ class _stampScreenState extends State<stampScreen> {
             ),
           ),
           Text(
-            "획득한 스탬프 ${stemp.length} / ${MAX_ANIMAL}",
+            "획득한 스탬프 ${stamp.length} / ${MAX_ANIMAL}",
             style: const TextStyle(
               color: const Color(0xff343435),
               fontWeight: FontWeight.w400,
@@ -190,7 +183,7 @@ class _stampScreenState extends State<stampScreen> {
     );
   }
 
-  Widget StampGridView(dynamic stemp) {
+  Widget _StampGridView(dynamic stamp) {
     return Container(
       padding: EdgeInsets.fromLTRB(30, 5, 30, 5),
       child: GridView.builder(
@@ -206,7 +199,7 @@ class _stampScreenState extends State<stampScreen> {
             crossAxisSpacing: 28 * getScaleWidth(context), //수직 padding
           ),
           itemBuilder: (BuildContext context, int idx) {
-            for (dynamic name in stemp) {
+            for (dynamic name in stamp) {
               if (animal_list[idx] == name) {
                 return StampTile(animalName: animal_list[idx]);
               }
@@ -215,61 +208,61 @@ class _stampScreenState extends State<stampScreen> {
           }),
     );
   }
-}
 
-Column SecondStampBackground(BuildContext context, Widget widget, String text) {
-  return Column(
-    children: [
-      Column(
-        children: [
-          //두 배경 사이 위쪽 공백
-          SizedBox(
-            height: 8 * getScaleHeight(context),
-          ),
-
-          //베이지 배경
-          Container(
-            margin: EdgeInsets.only(bottom: 8 * getScaleHeight(context)),
-            width: 338 * getScaleWidth(context),
-            height: 440 * getScaleHeight(context),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.all(Radius.circular(18)),
-              color: const Color(0xffd6d2cb),
+  Column _SecondStampBackground(Widget widget, String text) {
+    return Column(
+      children: [
+        Column(
+          children: [
+            //두 배경 사이 위쪽 공백
+            SizedBox(
+              height: 8 * getScaleHeight(context),
             ),
-            child: widget,
-          ),
-          // 동물스탬프
-          Text(
-            text,
-            style: const TextStyle(
-              color: const Color(0xfffefffb),
-              fontWeight: FontWeight.w400,
-              fontFamily: "NotoSans",
-              fontStyle: FontStyle.normal,
-              fontSize: 20.0,
-            ),
-          ),
-        ],
-      ),
-    ],
-  );
-}
 
-Container FirstStampBackground(BuildContext context) {
-  return Container(
-    width: 350 * getScaleWidth(context),
-    height: 500 * getScaleHeight(context),
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.all(Radius.circular(18)),
-      border: Border.all(color: const Color(0xff707070), width: 1),
-      boxShadow: [
-        BoxShadow(
-            color: const Color(0xcc000000),
-            offset: Offset(0, 3),
-            blurRadius: 6,
-            spreadRadius: 0)
+            //베이지 배경
+            Container(
+              margin: EdgeInsets.only(bottom: 8 * getScaleHeight(context)),
+              width: 338 * getScaleWidth(context),
+              height: 440 * getScaleHeight(context),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.all(Radius.circular(18)),
+                color: const Color(0xffd6d2cb),
+              ),
+              child: widget,
+            ),
+            // 동물스탬프
+            Text(
+              text,
+              style: const TextStyle(
+                color: const Color(0xfffefffb),
+                fontWeight: FontWeight.w400,
+                fontFamily: "NotoSans",
+                fontStyle: FontStyle.normal,
+                fontSize: 20.0,
+              ),
+            ),
+          ],
+        ),
       ],
-      color: const Color(0xffa69988),
-    ),
-  );
+    );
+  }
+
+  Container _FirstStampBackground() {
+    return Container(
+      width: 350 * getScaleWidth(context),
+      height: 500 * getScaleHeight(context),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.all(Radius.circular(18)),
+        border: Border.all(color: const Color(0xff707070), width: 1),
+        boxShadow: [
+          BoxShadow(
+              color: const Color(0xcc000000),
+              offset: Offset(0, 3),
+              blurRadius: 6,
+              spreadRadius: 0)
+        ],
+        color: const Color(0xffa69988),
+      ),
+    );
+  }
 }

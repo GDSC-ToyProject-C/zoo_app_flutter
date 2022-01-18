@@ -32,15 +32,14 @@ class _LoadingState extends State<Loading> with TickerProviderStateMixin {
             print('data: ${_stampList}');
             Navigator.pushAndRemoveUntil(
               context,
-              MaterialPageRoute(
-                  builder: (context) => stampScreen(stampData: _stampList)),
+              MaterialPageRoute(builder: (context) => stampScreen()),
               (route) => false,
             );
           }
         });
       });
 
-    LoadingData(); //get user stamp data
+    InitFireStore(); //get user stamp data
     _controller.forward(); //start progressbar
     super.initState();
   }
@@ -60,7 +59,7 @@ class _LoadingState extends State<Loading> with TickerProviderStateMixin {
     );
   }
 
-  Future<void> LoadingData() async {
+  Future<void> InitFireStore() async {
     //get user stamp data
     try {
       Firebase.initializeApp().whenComplete(() async {
@@ -70,7 +69,7 @@ class _LoadingState extends State<Loading> with TickerProviderStateMixin {
         });
       });
     } catch (err) {
-      print('error: from get user stamp data, retry get data');
+      print('error: from init FireStore');
     }
   }
 
