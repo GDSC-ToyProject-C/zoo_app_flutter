@@ -4,7 +4,6 @@ import '../size.dart';
 class ChildActionButton extends StatelessWidget {
   final VoidCallback onpressed;
   final Icon icon;
-
   const ChildActionButton({required this.onpressed, required this.icon});
 
   @override
@@ -15,7 +14,8 @@ class ChildActionButton extends StatelessWidget {
         ElevatedButton(
           style: ElevatedButton.styleFrom(
             shape: CircleBorder(),
-            padding: EdgeInsets.all(25 * getScaleWidth(context)),
+            padding: EdgeInsets.all(
+                icon.semanticLabel == 'big' ? 30 : 25 * getScaleWidth(context)),
             primary: Color(0xffa69988),
             elevation: 7,
             shadowColor: Colors.black,
