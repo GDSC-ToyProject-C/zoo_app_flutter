@@ -1,10 +1,12 @@
 //로딩 page
 //위치정보, 데이터 가져오기
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:zoo_app/screens/stamp_screen.dart';
 import 'package:zoo_app/size.dart';
-import '../data/get_stamp.dart';
+import '../data/firestore_data_control.dart';
 
 class Loading extends StatefulWidget {
   @override
@@ -17,6 +19,8 @@ class _LoadingState extends State<Loading> with TickerProviderStateMixin {
   @override
   void initState() {
     //gps좌표 받아오기(사진찍을때만 필요한가...)
+    _checkPermission();
+    // initFirebase();
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 5),
@@ -59,10 +63,12 @@ class _LoadingState extends State<Loading> with TickerProviderStateMixin {
   Future<void> LoadingData() async {
     //get user stamp data
     try {
-      _stampList = await getStamp();
-      await Future.delayed(Duration(seconds: 5));
-      print(_controller.isCompleted);
-      print(_stampList.isEmpty);
+      Firebase.initializeApp().whenComplete(() async {
+        _stampList = await getStamp().whenComplete(() {
+          print(_controller.isCompleted);
+          print(_stampList.isEmpty);
+        });
+      });
     } catch (err) {
       print('error: from get user stamp data, retry get data');
     }
@@ -154,5 +160,28 @@ class _LoadingState extends State<Loading> with TickerProviderStateMixin {
         ],
       ),
     );
+  }
+}
+
+_checkPermission() async {
+  bool serviceEnabled;
+  LocationPermission permission;
+
+  serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  if (!serviceEnabled) {
+    return Future.error('Location services are disabled');
+  }
+
+  permission = await Geolocator.checkPermission();
+  if (permission == LocationPermission.denied) {
+    permission = await Geolocator.requestPermission();
+    if (permission == LocationPermission.denied) {
+      return Future.error('Location permissions are denied');
+    }
+  }
+
+  if (permission == LocationPermission.deniedForever) {
+    return Future.error(
+        'Location permissions are permanently denied, we cannot request permissions.');
   }
 }

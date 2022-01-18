@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import '../data/firestore_data_control.dart';
 import '../size.dart';
 
 class CustomDialog extends StatefulWidget {
-  CustomDialog({Key? key}) : super(key: key);
+  final String animalName;
+  final bool stampPossible;
+  CustomDialog({required this.animalName, required this.stampPossible});
 
   @override
   _CustomDialogState createState() => _CustomDialogState();
@@ -78,7 +81,19 @@ class _CustomDialogState extends State<CustomDialog> {
                 ),
               ],
             ),
-            SizedBox(height: 17 * getScaleHeight(context)),
+            if (widget.stampPossible)
+              SizedBox(height: 17 * getScaleHeight(context)),
+            if (!widget.stampPossible)
+              Text(
+                "(동물원 안에 있지 않아 스탬프를 획득하실 수 없습니다)",
+                style: const TextStyle(
+                  color: const Color(0xff343435),
+                  fontWeight: FontWeight.w400,
+                  fontFamily: "NotoSans",
+                  fontStyle: FontStyle.normal,
+                  fontSize: 9.0,
+                ),
+              ),
 
             //버튼 컨테이너
             Row(
@@ -103,9 +118,15 @@ class _CustomDialogState extends State<CustomDialog> {
                       fontSize: 15.0,
                     ),
                   ),
-                  onPressed: () {
+                  onPressed: () async {
                     //go to info page
                     //크롤링 할지 말지?
+                    if (widget.stampPossible) {
+                      await addStamp('lion')
+                          .whenComplete(() => Navigator.pop(context, false));
+                    } else {
+                      Navigator.pop(context, false);
+                    }
                   },
                 ),
                 SizedBox(width: 10 * getScaleWidth(context)),
@@ -131,6 +152,7 @@ class _CustomDialogState extends State<CustomDialog> {
                   ),
                   onPressed: () {
                     //go to main
+                    Navigator.pop(context, false);
                   },
                 ),
               ],

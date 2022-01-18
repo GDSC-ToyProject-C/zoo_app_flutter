@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:zoo_app/custom_widget/child_fab.dart';
+import 'package:zoo_app/data/firestore_data_control.dart';
 import '../custom_widget/expandable_fab.dart';
 import '../size.dart';
 import '../custom_widget/stamp_tile.dart';
-import './image_check_screen.dart';
+import './image_info_screen.dart';
 
 class stampScreen extends StatefulWidget {
-  final dynamic stampData;
+  final List stampData;
   stampScreen({required this.stampData});
 
   @override
@@ -16,18 +17,11 @@ class stampScreen extends StatefulWidget {
 
 class _stampScreenState extends State<stampScreen> {
   final ImagePicker _picker = ImagePicker();
-
+  late List changedStampData;
   @override
   void initState() {
-    //그리드뷰 만들때 참고
-    for (String animal in animal_list) {
-      try {
-        print(widget.stampData[animal]);
-      } catch (err) {
-        print(animal);
-      }
-    }
     print(widget.stampData);
+    changedStampData = widget.stampData;
     super.initState();
   }
 
@@ -82,48 +76,66 @@ class _stampScreenState extends State<stampScreen> {
         _image = await _picker.pickImage(source: ImageSource.gallery);
       }
       if (_image != null) {
-        Navigator.push(
+        await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ImageCheckScreen(
+            builder: (context) => ImageInfoScreen(
               image: _image!,
             ),
           ),
         );
+        setState(() {
+          //futureBuilder rebuild
+          print('setState');
+        });
       }
     } catch (err) {
       print('err: from get Image');
+      print(err);
     }
   }
 
   Widget stampPage() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        // crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          SizedBox(
-            height: 30 * getScaleHeight(context),
-          ),
-          Stack(
-            alignment: Alignment.topCenter,
-            children: [
-              //갈색 배경(제일 아래)
-              FirstStampBackground(context),
+    return FutureBuilder(
+        future: getStamp(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return CircularProgressIndicator();
+          } else if (snapshot.hasError) {
+            return Text('err');
+          }
+          print('snap');
+          print(snapshot.data);
+          changedStampData.clear();
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              // crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                SizedBox(
+                  height: 30 * getScaleHeight(context),
+                ),
+                Stack(
+                  alignment: Alignment.topCenter,
+                  children: [
+                    //갈색 배경(제일 아래)
+                    FirstStampBackground(context),
 
-              //베이지 배경 컨테이너(공백, 베이지 배경)
-              //그리드 뷰 포함
-              SecondStampBackground(context, StampGridView(), '동물스탬프'),
-            ],
-          ),
-          //스탬프 개수 count
-          ViewStampCount(),
-        ],
-      ),
-    );
+                    //베이지 배경 컨테이너(공백, 베이지 배경)
+                    //그리드 뷰 포함
+                    SecondStampBackground(
+                        context, StampGridView(snapshot.data), '동물스탬프'),
+                  ],
+                ),
+                //스탬프 개수 count
+                ViewStampCount(snapshot.data),
+              ],
+            ),
+          );
+        });
   }
 
-  Widget ViewStampCount() {
+  Widget ViewStampCount(dynamic stemp) {
     return Container(
       alignment: Alignment.bottomLeft,
       margin: EdgeInsets.fromLTRB(
@@ -163,7 +175,7 @@ class _stampScreenState extends State<stampScreen> {
             ),
           ),
           Text(
-            "획득한 스탬프 ${widget.stampData.length} / ${MAX_ANIMAL}",
+            "획득한 스탬프 ${stemp.length} / ${MAX_ANIMAL}",
             style: const TextStyle(
               color: const Color(0xff343435),
               fontWeight: FontWeight.w400,
@@ -178,7 +190,7 @@ class _stampScreenState extends State<stampScreen> {
     );
   }
 
-  Widget StampGridView() {
+  Widget StampGridView(dynamic stemp) {
     return Container(
       padding: EdgeInsets.fromLTRB(30, 5, 30, 5),
       child: GridView.builder(
@@ -194,7 +206,7 @@ class _stampScreenState extends State<stampScreen> {
             crossAxisSpacing: 28 * getScaleWidth(context), //수직 padding
           ),
           itemBuilder: (BuildContext context, int idx) {
-            for (String name in widget.stampData) {
+            for (dynamic name in stemp) {
               if (animal_list[idx] == name) {
                 return StampTile(animalName: animal_list[idx]);
               }

@@ -1,36 +1,60 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:maps_toolkit/maps_toolkit.dart';
 import 'dart:io';
 import './stamp_screen.dart';
 import '../custom_widget/custom_dialog.dart';
+import '../data/my_locatoin.dart';
 import '../size.dart';
 
-class ImageCheckScreen extends StatefulWidget {
+class ImageInfoScreen extends StatefulWidget {
   final XFile image;
-  ImageCheckScreen({required this.image});
+  ImageInfoScreen({required this.image});
 
   @override
   _ImageCheckScreenState createState() => _ImageCheckScreenState();
 }
 
-class _ImageCheckScreenState extends State<ImageCheckScreen> {
+class _ImageCheckScreenState extends State<ImageInfoScreen> {
   @override
   void initState() {
     super.initState();
-    PopUp(); //커스텀 다이얼로그
+    checkImage(); //이미지 체크(커스텀 다이얼로그 사용)
   }
 
-  Future<void> PopUp() async {
+  Future<void> checkImage() async {
+    bool isAnimalRight;
+    bool isInZoo;
     //ML 코드 여기에
     //
     //
-    await Future.delayed(Duration(seconds: 1));
-    showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return CustomDialog();
-        });
+    isInZoo = await isUserInZoo();
+    isAnimalRight = await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return CustomDialog(
+          animalName: 'tempname',
+          stampPossible: isInZoo,
+        );
+      },
+    );
+    if (!isAnimalRight) {
+      //go to mainpage
+      Navigator.pop(context);
+    }
+  }
+
+  Future<bool> isUserInZoo() async {
+    MyLocation myLct = MyLocation();
+    await myLct.getMyCurrentLocation(); //자신의 위치 받아옴
+
+    return await PolygonUtil.containsLocation(
+      //지정한 다각형 안에 내가 있으면 true반환
+      LatLng(myLct.Latit, myLct.Longit),
+      Zoo_Lct,
+      true,
+    );
   }
 
   @override
