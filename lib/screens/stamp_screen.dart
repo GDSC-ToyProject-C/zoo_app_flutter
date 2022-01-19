@@ -14,6 +14,7 @@ class stampScreen extends StatefulWidget {
 
 class _stampScreenState extends State<stampScreen> {
   final ImagePicker _picker = ImagePicker();
+  late List _stampList;
   @override
   void initState() {
     super.initState();
@@ -71,9 +72,8 @@ class _stampScreenState extends State<stampScreen> {
         await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ImageInfoScreen(
-              image: _image!,
-            ),
+            builder: (context) =>
+                ImageInfoScreen(image: _image!, stampList: _stampList),
           ),
         );
         setState(() {
@@ -96,6 +96,9 @@ class _stampScreenState extends State<stampScreen> {
           }
           print('snap');
           print(snapshot.data);
+          if (snapshot.hasData) {
+            _stampList = snapshot.data as List;
+          }
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
