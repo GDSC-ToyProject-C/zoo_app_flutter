@@ -8,13 +8,6 @@ void initFirebase() async {
 Future<List> getStamp() async {
   //db에서 스탬프 등등 가져오기
   List _stampList = [];
-  // final collectionRef = await FirebaseFirestore.instance.collection('my_zoo');
-  // collectionRef.snapshots().listen((event) {
-  //   event.docs.forEach((element) {
-  //     // print('data: ${element.data()['stamp']}');
-  //     _stampList.addAll(element.data()['stamp']);
-  //   });
-  // });
   final collectionRef = FirebaseFirestore.instance
       .collection('my_zoo')
       .doc('vf8v4L6SXYiD3sULETNY');

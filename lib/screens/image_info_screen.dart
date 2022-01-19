@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:maps_toolkit/maps_toolkit.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'dart:io';
-import './stamp_screen.dart';
 import '../custom_widget/custom_dialog.dart';
 import '../custom_widget/child_fab.dart';
 import '../data/my_locatoin.dart';
@@ -10,7 +10,8 @@ import '../size.dart';
 
 class ImageInfoScreen extends StatefulWidget {
   final XFile image;
-  ImageInfoScreen({required this.image});
+  final List stampList;
+  ImageInfoScreen({required this.image, required this.stampList});
 
   @override
   _ImageCheckScreenState createState() => _ImageCheckScreenState();
@@ -18,7 +19,7 @@ class ImageInfoScreen extends StatefulWidget {
 
 class _ImageCheckScreenState extends State<ImageInfoScreen> {
   bool showInfo = false;
-
+  late String animalName;
   @override
   void initState() {
     super.initState();
@@ -30,14 +31,15 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
     bool isInZoo;
     //ML 코드 여기에
     //
-    //
+    animalName = 'tempname';
+    ////
     isInZoo = await isUserInZoo();
     isAnimalRight = await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return CustomDialog(
-          animalName: 'tempname',
+          animalName: animalName,
           stampPossible: isInZoo,
         );
       },
@@ -50,7 +52,8 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
     setState(() {
       showInfo = true;
     });
-    print(showInfo);
+
+    showToast(animalName, widget.stampList.contains(animalName) ? true : false);
   }
 
   Future<bool> isUserInZoo() async {
@@ -123,7 +126,7 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
                         child: Column(
                           children: [
                             ImageShow(widget.image),
-                            if (showInfo) InfoShow(),
+                            InfoShow(),
                           ],
                         ),
                       ),
@@ -139,17 +142,23 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
   }
 
   Widget InfoShow() {
-    return Column(
-      children: [
-        SizedBox(height: 12 * getScaleHeight(context)),
-        Container(
-            width: 312,
-            height: 300,
+    return AnimatedContainer(
+      duration: Duration(microseconds: 300),
+      curve: Curves.bounceIn,
+      child: Column(
+        children: [
+          SizedBox(height: 12 * getScaleHeight(context)),
+          Container(
+            width: 312 * getScaleWidth(context),
+            height: (showInfo ? 300 : 1) * getScaleHeight(context),
             decoration: BoxDecoration(
-                borderRadius: BorderRadius.all(Radius.circular(18)),
-                border: Border.all(color: const Color(0xff707070), width: 1),
-                color: const Color(0xffffffff))),
-      ],
+              borderRadius: BorderRadius.all(Radius.circular(18)),
+              border: Border.all(color: const Color(0xff707070), width: 1),
+              color: const Color(0xffffffff),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -195,7 +204,7 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
 
             //베이지 배경
             AnimatedContainer(
-              duration: Duration(milliseconds: 1000),
+              duration: Duration(milliseconds: 300),
               curve: Curves.easeIn,
               margin: EdgeInsets.only(bottom: 8 * getScaleHeight(context)),
               width: 338 * getScaleWidth(context),
@@ -213,7 +222,7 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
 
   Widget _FirstInfoBackground() {
     return AnimatedContainer(
-      duration: Duration(milliseconds: 1000),
+      duration: Duration(milliseconds: 300),
       curve: Curves.easeIn,
       width: 350 * getScaleWidth(context),
       height: (showInfo ? 563 : 500) * getScaleHeight(context),
@@ -229,6 +238,20 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
         ],
         color: const Color(0xffa69988),
       ),
+    );
+  }
+
+  void showToast(String message, bool exist) {
+    Fluttertoast.showToast(
+      msg: exist
+          ? "${message}은(는) 이미 등록되어있습니다."
+          : "${message}이(가) 스탬프에 등록되었습니다.",
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      timeInSecForIosWeb: 1,
+      backgroundColor: Color(0xfff59a3b),
+      textColor: Colors.white,
+      fontSize: 13.0,
     );
   }
 }

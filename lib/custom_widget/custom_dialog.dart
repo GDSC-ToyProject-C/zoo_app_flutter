@@ -60,7 +60,7 @@ class _CustomDialogState extends State<CustomDialog> {
                   ),
                 ),
                 Text(
-                  "기린", //이부분은 나중에 엠엘 돌리고 난 후 이미지에 맞는 이름으로 변경
+                  widget.animalName, //이부분은 나중에 엠엘 돌리고 난 후 이미지에 맞는 이름으로 변경
                   style: const TextStyle(
                     color: const Color(0xff343435),
                     fontWeight: FontWeight.w600,
@@ -122,7 +122,7 @@ class _CustomDialogState extends State<CustomDialog> {
                     //크롤링 할지 말지?
                     if (widget.stampPossible) {
                       //동물원 안에 있다면 DB에 스탬프 등록
-                      await addStamp('lion')
+                      await addStamp(widget.animalName)
                           .whenComplete(() => Navigator.pop(context, true));
                     } else {
                       //아니라면 등록하지않음
