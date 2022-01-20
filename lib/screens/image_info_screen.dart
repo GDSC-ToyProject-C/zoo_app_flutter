@@ -6,6 +6,7 @@ import 'dart:io';
 import '../custom_widget/custom_dialog.dart';
 import '../custom_widget/child_fab.dart';
 import '../data/my_locatoin.dart';
+import '../data/crawling_data.dart';
 import '../size.dart';
 
 class ImageInfoScreen extends StatefulWidget {
@@ -20,10 +21,12 @@ class ImageInfoScreen extends StatefulWidget {
 class _ImageCheckScreenState extends State<ImageInfoScreen> {
   bool showInfo = false;
   late String animalName;
+  late Future _getAnimalInfoOnce;
   @override
   void initState() {
-    super.initState();
+    _getAnimalInfoOnce = getAnimalInfo('');
     checkImage(); //이미지 체크(커스텀 다이얼로그 사용)
+    super.initState();
   }
 
   Future<void> checkImage() async {
@@ -74,6 +77,7 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
       backgroundColor: const Color(0xfff3c766),
       appBar: AppBar(
         centerTitle: true,
+        backgroundColor: Color(0xfff8a442),
         title: Text(
           'Zoo App',
           style: const TextStyle(
@@ -84,9 +88,24 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
             fontSize: 30.0,
           ),
         ),
-        backgroundColor: Color(0xfff8a442),
+        bottom: PreferredSize(
+          preferredSize: Size.fromHeight(6 * getScaleHeight(context)),
+          child: Container(
+            color: Color(0xff66491e),
+            height: 6.0 * getScaleHeight(context),
+          ),
+        ),
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Color(0xfffefffb),
+          ),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
       ),
-      body: _InfoScreen(),
+      body: _ImageInfoScreen(),
       floatingActionButton: ChildActionButton(
         icon: Icon(
           Icons.house_outlined,
@@ -99,7 +118,7 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
     );
   }
 
-  Widget _InfoScreen() {
+  Widget _ImageInfoScreen() {
     //이미지 표시 전 배경
     return Center(
       child: Column(
@@ -143,18 +162,72 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
 
   Widget InfoShow() {
     return AnimatedContainer(
-      duration: Duration(microseconds: 300),
+      duration: Duration(microseconds: 50),
       curve: Curves.bounceIn,
       child: Column(
         children: [
           SizedBox(height: 12 * getScaleHeight(context)),
           Container(
             width: 312 * getScaleWidth(context),
-            height: (showInfo ? 300 : 1) * getScaleHeight(context),
+            // height: (showInfo ? double. : double.minPositive) *
+            //     getScaleHeight(context),
+            constraints: BoxConstraints(minHeight: double.minPositive),
+            padding: showInfo
+                ? EdgeInsets.all(10 * getScaleWidth(context))
+                : EdgeInsets.zero,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.all(Radius.circular(18)),
               border: Border.all(color: const Color(0xff707070), width: 1),
               color: const Color(0xffffffff),
+            ),
+
+            child: FutureBuilder(
+              future: _getAnimalInfoOnce, //FutureBuilder 메모리 누수 방지
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Text('Error from get animal data');
+                } else if (snapshot.hasData) {
+                  print((snapshot.data as List)[0].length);
+                  print((snapshot.data as List)[1].length);
+                  print((snapshot.data as List)[0].length +
+                      (snapshot.data as List)[1].length);
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    scrollDirection: Axis.vertical,
+                    physics: AlwaysScrollableScrollPhysics(),
+                    itemCount: ((snapshot.data as List)[0].length) +
+                        (snapshot.data as List)[1].length,
+                    itemBuilder: (context, idx) {
+                      if (idx >= ((snapshot.data as List)[0].length)) {
+                        //상세 설명
+                        String desc = (snapshot.data as List)[1]
+                                [idx - (snapshot.data as List)[0].length]
+                            .join();
+                        if (desc.isNotEmpty) {
+                          //비어있지 않은 리스트만 출력
+                          return Text('\n' + desc);
+                        }
+                        return SizedBox(); //비어있다면 빈 박스 출력
+                      } else {
+                        dynamic sumup = (snapshot.data as List)[0][idx];
+                        return Text(
+                            ('${sumup.keys.join()} : ${sumup.values.join()}'));
+                      }
+                    },
+                  );
+                } else {
+                  return Center(
+                    child: showInfo
+                        ? SizedBox(
+                            width: 50 * getScaleWidth(context),
+                            height: 50 * getScaleHeight(context),
+                            child: CircularProgressIndicator(
+                              color: Color(0xfff8a442),
+                            ))
+                        : SizedBox(),
+                  );
+                }
+              },
             ),
           ),
         ],
@@ -204,7 +277,7 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
 
             //베이지 배경
             AnimatedContainer(
-              duration: Duration(milliseconds: 300),
+              duration: Duration(milliseconds: 50),
               curve: Curves.easeIn,
               margin: EdgeInsets.only(bottom: 8 * getScaleHeight(context)),
               width: 338 * getScaleWidth(context),

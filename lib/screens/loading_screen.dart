@@ -23,7 +23,7 @@ class _LoadingState extends State<Loading> with TickerProviderStateMixin {
     // initFirebase();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 5),
+      duration: const Duration(seconds: 3),
     )..addListener(() {
         setState(() {
           // progress bar가 다 찼고, 유저의 스탬프를 받아왔다면 다음화면으로

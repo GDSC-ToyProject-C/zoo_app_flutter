@@ -26,6 +26,7 @@ class _stampScreenState extends State<stampScreen> {
       backgroundColor: const Color(0xfff3c766),
       appBar: AppBar(
         centerTitle: true,
+        backgroundColor: Color(0xfff8a442),
         title: Text(
           'Zoo App',
           style: const TextStyle(
@@ -36,7 +37,13 @@ class _stampScreenState extends State<stampScreen> {
             fontSize: 30.0,
           ),
         ),
-        backgroundColor: Color(0xfff8a442),
+        bottom: PreferredSize(
+          preferredSize: Size.fromHeight(6 * getScaleHeight(context)),
+          child: Container(
+            color: Color(0xff66491e),
+            height: 6.0 * getScaleHeight(context),
+          ),
+        ),
       ),
       body: stampPage(),
       floatingActionButton: ParentActionButton(
