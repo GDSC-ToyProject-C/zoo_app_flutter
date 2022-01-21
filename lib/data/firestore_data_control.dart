@@ -2,7 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 void initFirebase() async {
-  await Firebase.initializeApp();
+  print(await Firebase.initializeApp());
 }
 
 Future<List> getStamp() async {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:tflite/tflite.dart';
 import 'package:zoo_app/custom_widget/child_fab.dart';
 import 'package:zoo_app/data/firestore_data_control.dart';
 import '../custom_widget/expandable_fab.dart';
@@ -18,6 +19,12 @@ class _stampScreenState extends State<stampScreen> {
   @override
   void initState() {
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    Tflite.close();
+    super.dispose();
   }
 
   @override
@@ -109,7 +116,6 @@ class _stampScreenState extends State<stampScreen> {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
-              // crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 SizedBox(
                   height: 30 * getScaleHeight(context),
@@ -125,7 +131,7 @@ class _stampScreenState extends State<stampScreen> {
                     _SecondStampBackground(
                         snapshot.hasData
                             ? _StampGridView(snapshot.data)
-                            : CircularProgressIndicator(),
+                            : Center(child: CircularProgressIndicator()),
                         '동물스탬프')
                   ],
                 ),

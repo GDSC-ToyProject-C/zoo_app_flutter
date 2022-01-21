@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:maps_toolkit/maps_toolkit.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:tflite/tflite.dart';
 import 'dart:io';
 import '../custom_widget/custom_dialog.dart';
 import '../custom_widget/child_fab.dart';
@@ -19,44 +20,65 @@ class ImageInfoScreen extends StatefulWidget {
 }
 
 class _ImageCheckScreenState extends State<ImageInfoScreen> {
-  bool showInfo = false;
-  late String animalName;
+  bool _showInfo = false;
+  bool _isAnimalRight = false;
+  late String _recognizedAnimal;
   late Future _getAnimalInfoOnce;
   @override
   void initState() {
     _getAnimalInfoOnce = getAnimalInfo('');
+    // recognizeImage();
     checkImage(); //이미지 체크(커스텀 다이얼로그 사용)
     super.initState();
   }
 
+  recognizeImage() async {
+    await Tflite.runModelOnImage(
+      path: widget.image.path,
+      imageMean: 117.0,
+      imageStd: 255.0,
+      numResults: 1,
+      threshold: 0.1,
+      asynch: true,
+    ).then((value) {
+      setState(() {
+        _recognizedAnimal = (value as List)[0]['label'];
+        // _recognizedAnimal = value[];
+        print('recognitions: ${_recognizedAnimal}');
+      });
+    });
+  }
+
   Future<void> checkImage() async {
-    bool isAnimalRight;
     bool isInZoo;
     //ML 코드 여기에
-    //
-    animalName = 'tempname';
+    await recognizeImage();
     ////
     isInZoo = await isUserInZoo();
-    isAnimalRight = await showDialog(
+    await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return CustomDialog(
-          animalName: animalName,
+          animalName: _recognizedAnimal,
           stampPossible: isInZoo,
         );
       },
-    );
-    if (!isAnimalRight) {
+    ).then((value) {
+      setState(() {
+        _isAnimalRight = value;
+        _showInfo = true;
+      });
+
+      if (isInZoo) {
+        showToast(_recognizedAnimal,
+            widget.stampList.contains(_recognizedAnimal) ? true : false);
+      }
+    });
+    if (!_isAnimalRight) {
       //go to mainpage
       Navigator.pop(context);
     }
-
-    setState(() {
-      showInfo = true;
-    });
-
-    showToast(animalName, widget.stampList.contains(animalName) ? true : false);
   }
 
   Future<bool> isUserInZoo() async {
@@ -169,10 +191,8 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
           SizedBox(height: 12 * getScaleHeight(context)),
           Container(
             width: 312 * getScaleWidth(context),
-            // height: (showInfo ? double. : double.minPositive) *
-            //     getScaleHeight(context),
             constraints: BoxConstraints(minHeight: double.minPositive),
-            padding: showInfo
+            padding: _showInfo
                 ? EdgeInsets.all(10 * getScaleWidth(context))
                 : EdgeInsets.zero,
             decoration: BoxDecoration(
@@ -180,13 +200,12 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
               border: Border.all(color: const Color(0xff707070), width: 1),
               color: const Color(0xffffffff),
             ),
-
             child: FutureBuilder(
               future: _getAnimalInfoOnce, //FutureBuilder 메모리 누수 방지
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return Text('Error from get animal data');
-                } else if (snapshot.hasData) {
+                } else if (snapshot.hasData && _isAnimalRight) {
                   print((snapshot.data as List)[0].length);
                   print((snapshot.data as List)[1].length);
                   print((snapshot.data as List)[0].length +
@@ -194,7 +213,7 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
                   return ListView.builder(
                     shrinkWrap: true,
                     scrollDirection: Axis.vertical,
-                    physics: AlwaysScrollableScrollPhysics(),
+                    physics: NeverScrollableScrollPhysics(),
                     itemCount: ((snapshot.data as List)[0].length) +
                         (snapshot.data as List)[1].length,
                     itemBuilder: (context, idx) {
@@ -205,7 +224,7 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
                             .join();
                         if (desc.isNotEmpty) {
                           //비어있지 않은 리스트만 출력
-                          return Text('\n' + desc);
+                          return Container(child: Text('\n' + desc));
                         }
                         return SizedBox(); //비어있다면 빈 박스 출력
                       } else {
@@ -217,13 +236,14 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
                   );
                 } else {
                   return Center(
-                    child: showInfo
+                    child: _showInfo
                         ? SizedBox(
                             width: 50 * getScaleWidth(context),
                             height: 50 * getScaleHeight(context),
                             child: CircularProgressIndicator(
                               color: Color(0xfff8a442),
-                            ))
+                            ),
+                          )
                         : SizedBox(),
                   );
                 }
@@ -281,7 +301,7 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
               curve: Curves.easeIn,
               margin: EdgeInsets.only(bottom: 8 * getScaleHeight(context)),
               width: 338 * getScaleWidth(context),
-              height: (showInfo ? 521 : 440) * getScaleHeight(context),
+              height: (_showInfo ? 521 : 440) * getScaleHeight(context),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.all(Radius.circular(18)),
                 color: const Color(0xffd6d2cb),
@@ -298,7 +318,7 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
       duration: Duration(milliseconds: 300),
       curve: Curves.easeIn,
       width: 350 * getScaleWidth(context),
-      height: (showInfo ? 563 : 500) * getScaleHeight(context),
+      height: (_showInfo ? 563 : 500) * getScaleHeight(context),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.all(Radius.circular(18)),
         border: Border.all(color: const Color(0xff707070), width: 1),
