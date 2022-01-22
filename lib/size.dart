@@ -13,8 +13,30 @@ double getScaleHeight(BuildContext context) {
   return height;
 }
 
-var temp = List<String>.filled(12, 0.toString(), growable: true);
-final List<String> animal_list = ['giraffe', '???', 'lion']..addAll(temp);
+final List<String> animal_list = [
+  '개',
+  '말',
+  '코끼리',
+  '나비',
+  '닭',
+  '고양이',
+  '소',
+  '양',
+  '거미',
+  '다람쥐'
+];
+final Map<String, int> get_animal_idx = {
+  'dog': 0,
+  'horse': 1,
+  'elephant': 2,
+  'butterfly': 3,
+  'chicken': 4,
+  'cat': 5,
+  'cow': 6,
+  'sheep': 7,
+  'spider': 8,
+  'squirrel': 9
+};
 final int MAX_ANIMAL = animal_list.length;
 
 final LatLng Zoo1 = LatLng(36.766793, 126.930935);

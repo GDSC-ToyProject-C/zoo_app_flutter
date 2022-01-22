@@ -10,8 +10,8 @@ class MyLocation {
           desiredAccuracy: LocationAccuracy.high);
       Latit = myPos.latitude;
       Longit = myPos.longitude;
-      print(Latit);
-      print(Longit);
+      print('latit: ${Latit}');
+      print('longit: ${Longit}');
     } catch (err) {
       print('err: err from loading currentLocation');
       print(err);

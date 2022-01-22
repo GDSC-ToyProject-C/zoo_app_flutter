@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:zoo_app/screens/stamp_screen.dart';
 import 'package:zoo_app/size.dart';
-import '../data/firestore_data_control.dart';
+import 'package:tflite/tflite.dart';
 
 class Loading extends StatefulWidget {
   @override
@@ -15,21 +15,23 @@ class Loading extends StatefulWidget {
 
 class _LoadingState extends State<Loading> with TickerProviderStateMixin {
   late AnimationController _controller; //progress bar를 위한 _controller
-  List _stampList = [];
+  bool _modelStatus = false;
   @override
   void initState() {
     //gps좌표 받아오기(사진찍을때만 필요한가...)
-    _checkPermission();
-    // initFirebase();
+    _checkPermission(); //위치정보 체크
+    InitFireStore(); //init firestore
+    _loadMlModel(); //load ml model
+
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 5),
+      duration: const Duration(seconds: 3),
     )..addListener(() {
         setState(() {
           // progress bar가 다 찼고, 유저의 스탬프를 받아왔다면 다음화면으로
-          if (_controller.isCompleted && _stampList.isNotEmpty) {
+          if (_controller.isCompleted && _modelStatus) {
             print('loading complt');
-            print('data: ${_stampList}');
+            print('is model loaded: ${_modelStatus}');
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(builder: (context) => stampScreen()),
@@ -39,7 +41,6 @@ class _LoadingState extends State<Loading> with TickerProviderStateMixin {
         });
       });
 
-    InitFireStore(); //get user stamp data
     _controller.forward(); //start progressbar
     super.initState();
   }
@@ -48,6 +49,18 @@ class _LoadingState extends State<Loading> with TickerProviderStateMixin {
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  void _loadMlModel() async {
+    var res = await Tflite.loadModel(
+      model: 'assets/model2.tflite',
+      labels: 'assets/model2.txt',
+    ).whenComplete(() {
+      setState(() {
+        _modelStatus = true;
+      });
+    });
+    print('LoadModel: ${res}');
   }
 
   @override
@@ -62,12 +75,7 @@ class _LoadingState extends State<Loading> with TickerProviderStateMixin {
   Future<void> InitFireStore() async {
     //get user stamp data
     try {
-      Firebase.initializeApp().whenComplete(() async {
-        _stampList = await getStamp().whenComplete(() {
-          print(_controller.isCompleted);
-          print(_stampList.isEmpty);
-        });
-      });
+      await Firebase.initializeApp();
     } catch (err) {
       print('error: from init FireStore');
     }
@@ -101,7 +109,7 @@ class _LoadingState extends State<Loading> with TickerProviderStateMixin {
                 ),
               ),
               Image.asset(
-                'images/giraffe.png',
+                'images/zoo.png',
                 width: 150 * getScaleWidth(context),
                 height: 150 * getScaleHeight(context),
               ),

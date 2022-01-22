@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:tflite/tflite.dart';
 import 'package:zoo_app/custom_widget/child_fab.dart';
 import 'package:zoo_app/data/firestore_data_control.dart';
 import '../custom_widget/expandable_fab.dart';
@@ -15,9 +16,11 @@ class stampScreen extends StatefulWidget {
 class _stampScreenState extends State<stampScreen> {
   final ImagePicker _picker = ImagePicker();
   late List _stampList;
+
   @override
-  void initState() {
-    super.initState();
+  void dispose() {
+    Tflite.close();
+    super.dispose();
   }
 
   @override
@@ -26,6 +29,7 @@ class _stampScreenState extends State<stampScreen> {
       backgroundColor: const Color(0xfff3c766),
       appBar: AppBar(
         centerTitle: true,
+        backgroundColor: Color(0xfff8a442),
         title: Text(
           'Zoo App',
           style: const TextStyle(
@@ -36,7 +40,14 @@ class _stampScreenState extends State<stampScreen> {
             fontSize: 30.0,
           ),
         ),
-        backgroundColor: Color(0xfff8a442),
+        bottom: PreferredSize(
+          //appbar의 아래쪽에 검정 선 추가
+          preferredSize: Size.fromHeight(6 * getScaleHeight(context)),
+          child: Container(
+            color: Color(0xff66491e),
+            height: 6.0 * getScaleHeight(context),
+          ),
+        ),
       ),
       body: stampPage(),
       floatingActionButton: ParentActionButton(
@@ -78,7 +89,7 @@ class _stampScreenState extends State<stampScreen> {
         );
         setState(() {
           //futureBuilder rebuild
-          print('setState');
+          print('setState : stamp view rebuild');
         });
       }
     } catch (err) {
@@ -94,15 +105,13 @@ class _stampScreenState extends State<stampScreen> {
           if (snapshot.hasError) {
             return Text('err');
           }
-          print('snap');
-          print(snapshot.data);
+          print('stemp snap data: ${snapshot.data}');
           if (snapshot.hasData) {
             _stampList = snapshot.data as List;
           }
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
-              // crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 SizedBox(
                   height: 30 * getScaleHeight(context),
@@ -118,12 +127,13 @@ class _stampScreenState extends State<stampScreen> {
                     _SecondStampBackground(
                         snapshot.hasData
                             ? _StampGridView(snapshot.data)
-                            : CircularProgressIndicator(),
+                            : Center(
+                                child: CircularProgressIndicator(
+                                    color: Color(0xfff8a442))),
                         '동물스탬프')
                   ],
                 ),
                 //스탬프 개수 count
-
                 _ViewStampCount(snapshot.hasData ? snapshot.data : []),
               ],
             ),
@@ -194,20 +204,18 @@ class _stampScreenState extends State<stampScreen> {
           itemCount: MAX_ANIMAL,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            childAspectRatio: 120 *
-                getScaleWidth(context) /
-                134 *
-                getScaleHeight(context), //tile의 비율
+            childAspectRatio: (120 * getScaleWidth(context)) /
+                (134 * getScaleHeight(context)), //tile의 비율
             mainAxisSpacing: 25 * getScaleHeight(context), //수평 padding
             crossAxisSpacing: 28 * getScaleWidth(context), //수직 padding
           ),
           itemBuilder: (BuildContext context, int idx) {
             for (dynamic name in stamp) {
-              if (animal_list[idx] == name) {
-                return StampTile(animalName: animal_list[idx]);
+              if (idx == get_animal_idx[name]) {
+                return StampTile(animalName: name); //스탬프 이미지가 있는 타일 추가
               }
             }
-            return StampTile(animalName: 'null');
+            return StampTile(animalName: 'null'); //스탬프 이미지가 없는 타일 추가
           }),
     );
   }
@@ -218,9 +226,7 @@ class _stampScreenState extends State<stampScreen> {
         Column(
           children: [
             //두 배경 사이 위쪽 공백
-            SizedBox(
-              height: 8 * getScaleHeight(context),
-            ),
+            SizedBox(height: 8 * getScaleHeight(context)),
 
             //베이지 배경
             Container(

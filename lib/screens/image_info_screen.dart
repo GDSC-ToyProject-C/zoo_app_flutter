@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:maps_toolkit/maps_toolkit.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:tflite/tflite.dart';
+import '../data/firestore_data_control.dart';
 import 'dart:io';
 import '../custom_widget/custom_dialog.dart';
 import '../custom_widget/child_fab.dart';
 import '../data/my_locatoin.dart';
+import '../data/crawling_data.dart';
 import '../size.dart';
 
 class ImageInfoScreen extends StatefulWidget {
@@ -18,48 +21,92 @@ class ImageInfoScreen extends StatefulWidget {
 }
 
 class _ImageCheckScreenState extends State<ImageInfoScreen> {
-  bool showInfo = false;
-  late String animalName;
+  bool _showInfo = false;
+  bool _isAnimalRight = false;
+  late String _recognizedAnimal;
+  late Future _getAnimalInfoOnce;
   @override
   void initState() {
+    _getAnimalInfoOnce = getAnimalInfo();
     super.initState();
-    checkImage(); //이미지 체크(커스텀 다이얼로그 사용)
   }
 
-  Future<void> checkImage() async {
-    bool isAnimalRight;
+  Future<List> getAnimalInfo() async {
+    late List animalInfo = [];
+    String animalLink = '';
+    await checkImage().then((value) async {
+      if (value) {
+        //isAnimalRight = true 일때만 실행
+        animalLink = await getAnimalLink(_recognizedAnimal);
+        animalInfo.add(await getAnimalSumUpData(animalLink));
+        animalInfo.add(await getAnimalDesc(animalLink));
+      }
+    });
+    return animalInfo;
+  }
+
+  recognizeImage() async {
+    await Tflite.runModelOnImage(
+      path: widget.image.path,
+      imageMean: 117.0,
+      imageStd: 255.0,
+      numResults: 1,
+      threshold: 0.1,
+      asynch: true,
+    ).then((value) {
+      setState(() {
+        if ((value as List)[0]['confidence'] > 0.6) {
+          //정확도가 60%이상일때만 성공으로 판단
+          _recognizedAnimal = (value as List)[0]['label'];
+          print('recognitions: ${_recognizedAnimal}');
+        } else {
+          _recognizedAnimal = 'recog_fail';
+        }
+        print('recognized animal: ${_recognizedAnimal}');
+      });
+    });
+  }
+
+  Future<bool> checkImage() async {
     bool isInZoo;
-    //ML 코드 여기에
-    //
-    animalName = 'tempname';
-    ////
-    isInZoo = await isUserInZoo();
-    isAnimalRight = await showDialog(
+
+    await recognizeImage(); //이미지 판단
+
+    isInZoo = await isUserInZoo(); //유저가 동물원 안에 있는지 판단
+    await showDialog(
+      //동물 확인 다이얼로그 출력
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return CustomDialog(
-          animalName: animalName,
+          animal: _recognizedAnimal,
           stampPossible: isInZoo,
         );
       },
-    );
-    if (!isAnimalRight) {
+    ).then((value) {
+      //다이얼로그에서 이미지 확인 결과값을 받아옴
+      setState(() {
+        print('is animal right: ${value}');
+        _isAnimalRight = value;
+        _showInfo = true;
+      });
+
+      if (isInZoo) {
+        //유저가 동물원 안에 있다면 스탬프 등록 토스트메시지 출력
+        showToast(animal_list[get_animal_idx[_recognizedAnimal]!],
+            widget.stampList.contains(_recognizedAnimal) ? true : false);
+      }
+    });
+    if (!_isAnimalRight) {
       //go to mainpage
       Navigator.pop(context);
     }
-
-    setState(() {
-      showInfo = true;
-    });
-
-    showToast(animalName, widget.stampList.contains(animalName) ? true : false);
+    return _isAnimalRight;
   }
 
   Future<bool> isUserInZoo() async {
     MyLocation myLct = MyLocation();
     await myLct.getMyCurrentLocation(); //자신의 위치 받아옴
-
     return await PolygonUtil.containsLocation(
       //지정한 다각형 안에 내가 있으면 true반환
       LatLng(myLct.Latit, myLct.Longit),
@@ -74,6 +121,7 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
       backgroundColor: const Color(0xfff3c766),
       appBar: AppBar(
         centerTitle: true,
+        backgroundColor: Color(0xfff8a442),
         title: Text(
           'Zoo App',
           style: const TextStyle(
@@ -84,9 +132,24 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
             fontSize: 30.0,
           ),
         ),
-        backgroundColor: Color(0xfff8a442),
+        bottom: PreferredSize(
+          preferredSize: Size.fromHeight(6 * getScaleHeight(context)),
+          child: Container(
+            color: Color(0xff66491e),
+            height: 6.0 * getScaleHeight(context),
+          ),
+        ),
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Color(0xfffefffb),
+          ),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
       ),
-      body: _InfoScreen(),
+      body: _ImageInfoScreen(),
       floatingActionButton: ChildActionButton(
         icon: Icon(
           Icons.house_outlined,
@@ -99,7 +162,8 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
     );
   }
 
-  Widget _InfoScreen() {
+  Widget _ImageInfoScreen() {
+    //이미지와 설명화면을 포함하는 위젯
     //이미지 표시 전 배경
     return Center(
       child: Column(
@@ -122,6 +186,7 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(18),
                       child: SingleChildScrollView(
+                        //이미지와 설명 위젯을 묶어서 스크롤
                         scrollDirection: Axis.vertical,
                         child: Column(
                           children: [
@@ -142,19 +207,69 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
   }
 
   Widget InfoShow() {
+    //동물 설명 위젯 (_showInfo값에 따라 표시를 할지 안할지 결정)
     return AnimatedContainer(
-      duration: Duration(microseconds: 300),
+      duration: Duration(microseconds: 50),
       curve: Curves.bounceIn,
       child: Column(
         children: [
           SizedBox(height: 12 * getScaleHeight(context)),
           Container(
             width: 312 * getScaleWidth(context),
-            height: (showInfo ? 300 : 1) * getScaleHeight(context),
+            constraints: BoxConstraints(minHeight: double.minPositive),
+            padding: _showInfo
+                ? EdgeInsets.all(10 * getScaleWidth(context))
+                : EdgeInsets.zero,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.all(Radius.circular(18)),
               border: Border.all(color: const Color(0xff707070), width: 1),
               color: const Color(0xffffffff),
+            ),
+            child: FutureBuilder(
+              future: _getAnimalInfoOnce, //FutureBuilder 메모리 누수 방지
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Text('Error from get animal data');
+                } else if (snapshot.hasData && _isAnimalRight) {
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    scrollDirection: Axis.vertical,
+                    physics:
+                        NeverScrollableScrollPhysics(), //설명이 표시되는 리스트뷰는 스크롤X
+                    itemCount: ((snapshot.data as List)[0].length) +
+                        (snapshot.data as List)[1].length,
+                    itemBuilder: (context, idx) {
+                      if (idx >= ((snapshot.data as List)[0].length)) {
+                        //상세 설명
+                        String desc = (snapshot.data as List)[1]
+                                [idx - (snapshot.data as List)[0].length]
+                            .join();
+                        if (desc.isNotEmpty) {
+                          //비어있지 않은 리스트만 출력
+                          return Container(child: Text('\n' + desc));
+                        }
+                        return SizedBox(); //비어있다면 빈 박스 출력
+                      } else {
+                        dynamic sumup = (snapshot.data as List)[0][idx];
+                        return Text(
+                            ('${sumup.keys.join()} : ${sumup.values.join()}'));
+                      }
+                    },
+                  );
+                } else {
+                  return Center(
+                    child: _showInfo
+                        ? SizedBox(
+                            width: 50 * getScaleWidth(context),
+                            height: 50 * getScaleHeight(context),
+                            child: CircularProgressIndicator(
+                              color: Color(0xfff8a442),
+                            ),
+                          )
+                        : SizedBox(),
+                  );
+                }
+              },
             ),
           ),
         ],
@@ -163,10 +278,12 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
   }
 
   Widget ImageShow(XFile _image) {
+    //이미지 표시 위젯
     return Column(
       children: [
         Container(
           width: 312 * getScaleWidth(context),
+          constraints: BoxConstraints(maxHeight: 399 * getScaleHeight(context)),
           decoration: BoxDecoration(
             boxShadow: [
               BoxShadow(
@@ -204,11 +321,11 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
 
             //베이지 배경
             AnimatedContainer(
-              duration: Duration(milliseconds: 300),
+              duration: Duration(milliseconds: 50),
               curve: Curves.easeIn,
               margin: EdgeInsets.only(bottom: 8 * getScaleHeight(context)),
               width: 338 * getScaleWidth(context),
-              height: (showInfo ? 521 : 440) * getScaleHeight(context),
+              height: (_showInfo ? 521 : 440) * getScaleHeight(context),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.all(Radius.circular(18)),
                 color: const Color(0xffd6d2cb),
@@ -225,7 +342,7 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
       duration: Duration(milliseconds: 300),
       curve: Curves.easeIn,
       width: 350 * getScaleWidth(context),
-      height: (showInfo ? 563 : 500) * getScaleHeight(context),
+      height: (_showInfo ? 563 : 500) * getScaleHeight(context),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.all(Radius.circular(18)),
         border: Border.all(color: const Color(0xff707070), width: 1),
@@ -242,6 +359,7 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
   }
 
   void showToast(String message, bool exist) {
+    //exist 값에 따라 등록 메시지 결정
     Fluttertoast.showToast(
       msg: exist
           ? "${message}은(는) 이미 등록되어있습니다."
