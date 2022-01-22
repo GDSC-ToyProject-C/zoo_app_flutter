@@ -7,7 +7,6 @@ import '../custom_widget/expandable_fab.dart';
 import '../size.dart';
 import '../custom_widget/stamp_tile.dart';
 import './image_info_screen.dart';
-import '../data/my_locatoin.dart';
 
 class stampScreen extends StatefulWidget {
   @override
@@ -17,10 +16,6 @@ class stampScreen extends StatefulWidget {
 class _stampScreenState extends State<stampScreen> {
   final ImagePicker _picker = ImagePicker();
   late List _stampList;
-  @override
-  void initState() {
-    super.initState();
-  }
 
   @override
   void dispose() {
@@ -46,6 +41,7 @@ class _stampScreenState extends State<stampScreen> {
           ),
         ),
         bottom: PreferredSize(
+          //appbar의 아래쪽에 검정 선 추가
           preferredSize: Size.fromHeight(6 * getScaleHeight(context)),
           child: Container(
             color: Color(0xff66491e),
@@ -60,9 +56,7 @@ class _stampScreenState extends State<stampScreen> {
           //카메라 버튼
           ChildActionButton(
             onpressed: () {
-              MyLocation temp = MyLocation();
-              temp.getMyCurrentLocation();
-              // pickImage(true);
+              pickImage(true);
             },
             icon: Icon(Icons.camera_alt_outlined),
           ),
@@ -133,12 +127,13 @@ class _stampScreenState extends State<stampScreen> {
                     _SecondStampBackground(
                         snapshot.hasData
                             ? _StampGridView(snapshot.data)
-                            : Center(child: CircularProgressIndicator()),
+                            : Center(
+                                child: CircularProgressIndicator(
+                                    color: Color(0xfff8a442))),
                         '동물스탬프')
                   ],
                 ),
                 //스탬프 개수 count
-
                 _ViewStampCount(snapshot.hasData ? snapshot.data : []),
               ],
             ),
@@ -209,20 +204,18 @@ class _stampScreenState extends State<stampScreen> {
           itemCount: MAX_ANIMAL,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            childAspectRatio: 120 *
-                getScaleWidth(context) /
-                134 *
-                getScaleHeight(context), //tile의 비율
+            childAspectRatio: (120 * getScaleWidth(context)) /
+                (134 * getScaleHeight(context)), //tile의 비율
             mainAxisSpacing: 25 * getScaleHeight(context), //수평 padding
             crossAxisSpacing: 28 * getScaleWidth(context), //수직 padding
           ),
           itemBuilder: (BuildContext context, int idx) {
             for (dynamic name in stamp) {
               if (idx == get_animal_idx[name]) {
-                return StampTile(animalName: name);
+                return StampTile(animalName: name); //스탬프 이미지가 있는 타일 추가
               }
             }
-            return StampTile(animalName: 'null');
+            return StampTile(animalName: 'null'); //스탬프 이미지가 없는 타일 추가
           }),
     );
   }
@@ -233,9 +226,7 @@ class _stampScreenState extends State<stampScreen> {
         Column(
           children: [
             //두 배경 사이 위쪽 공백
-            SizedBox(
-              height: 8 * getScaleHeight(context),
-            ),
+            SizedBox(height: 8 * getScaleHeight(context)),
 
             //베이지 배경
             Container(

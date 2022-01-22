@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:zoo_app/screens/stamp_screen.dart';
 import 'package:zoo_app/size.dart';
-import '../data/firestore_data_control.dart';
 import 'package:tflite/tflite.dart';
 
 class Loading extends StatefulWidget {
@@ -20,9 +19,9 @@ class _LoadingState extends State<Loading> with TickerProviderStateMixin {
   @override
   void initState() {
     //gps좌표 받아오기(사진찍을때만 필요한가...)
-    _checkPermission();
+    _checkPermission(); //위치정보 체크
     InitFireStore(); //init firestore
-    _loadMlModel(); //init tflite
+    _loadMlModel(); //load ml model
 
     _controller = AnimationController(
       vsync: this,

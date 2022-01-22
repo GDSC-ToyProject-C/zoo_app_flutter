@@ -28,8 +28,6 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
   @override
   void initState() {
     _getAnimalInfoOnce = getAnimalInfo();
-    // recognizeImage();
-
     super.initState();
   }
 
@@ -38,12 +36,12 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
     String animalLink = '';
     await checkImage().then((value) async {
       if (value) {
+        //isAnimalRight = true 일때만 실행
         animalLink = await getAnimalLink(_recognizedAnimal);
         animalInfo.add(await getAnimalSumUpData(animalLink));
         animalInfo.add(await getAnimalDesc(animalLink));
       }
     });
-
     return animalInfo;
   }
 
@@ -57,9 +55,8 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
       asynch: true,
     ).then((value) {
       setState(() {
-        print(value);
         if ((value as List)[0]['confidence'] > 0.6) {
-          //정확도가 60%이상일때만 성공
+          //정확도가 60%이상일때만 성공으로 판단
           _recognizedAnimal = (value as List)[0]['label'];
           print('recognitions: ${_recognizedAnimal}');
         } else {
@@ -72,11 +69,12 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
 
   Future<bool> checkImage() async {
     bool isInZoo;
-    //ML 코드 여기에
-    await recognizeImage();
-    ////
-    isInZoo = await isUserInZoo();
+
+    await recognizeImage(); //이미지 판단
+
+    isInZoo = await isUserInZoo(); //유저가 동물원 안에 있는지 판단
     await showDialog(
+      //동물 확인 다이얼로그 출력
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
@@ -86,6 +84,7 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
         );
       },
     ).then((value) {
+      //다이얼로그에서 이미지 확인 결과값을 받아옴
       setState(() {
         print('is animal right: ${value}');
         _isAnimalRight = value;
@@ -93,6 +92,7 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
       });
 
       if (isInZoo) {
+        //유저가 동물원 안에 있다면 스탬프 등록 토스트메시지 출력
         showToast(animal_list[get_animal_idx[_recognizedAnimal]!],
             widget.stampList.contains(_recognizedAnimal) ? true : false);
       }
@@ -163,6 +163,7 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
   }
 
   Widget _ImageInfoScreen() {
+    //이미지와 설명화면을 포함하는 위젯
     //이미지 표시 전 배경
     return Center(
       child: Column(
@@ -185,6 +186,7 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(18),
                       child: SingleChildScrollView(
+                        //이미지와 설명 위젯을 묶어서 스크롤
                         scrollDirection: Axis.vertical,
                         child: Column(
                           children: [
@@ -205,6 +207,7 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
   }
 
   Widget InfoShow() {
+    //동물 설명 위젯 (_showInfo값에 따라 표시를 할지 안할지 결정)
     return AnimatedContainer(
       duration: Duration(microseconds: 50),
       curve: Curves.bounceIn,
@@ -275,6 +278,7 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
   }
 
   Widget ImageShow(XFile _image) {
+    //이미지 표시 위젯
     return Column(
       children: [
         Container(
@@ -355,6 +359,7 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
   }
 
   void showToast(String message, bool exist) {
+    //exist 값에 따라 등록 메시지 결정
     Fluttertoast.showToast(
       msg: exist
           ? "${message}은(는) 이미 등록되어있습니다."
