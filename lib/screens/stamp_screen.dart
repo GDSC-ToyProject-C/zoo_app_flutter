@@ -7,6 +7,7 @@ import '../custom_widget/expandable_fab.dart';
 import '../size.dart';
 import '../custom_widget/stamp_tile.dart';
 import './image_info_screen.dart';
+import '../data/my_locatoin.dart';
 
 class stampScreen extends StatefulWidget {
   @override
@@ -59,7 +60,9 @@ class _stampScreenState extends State<stampScreen> {
           //카메라 버튼
           ChildActionButton(
             onpressed: () {
-              pickImage(true);
+              MyLocation temp = MyLocation();
+              temp.getMyCurrentLocation();
+              // pickImage(true);
             },
             icon: Icon(Icons.camera_alt_outlined),
           ),
@@ -92,7 +95,7 @@ class _stampScreenState extends State<stampScreen> {
         );
         setState(() {
           //futureBuilder rebuild
-          print('setState');
+          print('setState : stamp view rebuild');
         });
       }
     } catch (err) {
@@ -108,8 +111,7 @@ class _stampScreenState extends State<stampScreen> {
           if (snapshot.hasError) {
             return Text('err');
           }
-          print('snap');
-          print(snapshot.data);
+          print('stemp snap data: ${snapshot.data}');
           if (snapshot.hasData) {
             _stampList = snapshot.data as List;
           }
@@ -216,8 +218,8 @@ class _stampScreenState extends State<stampScreen> {
           ),
           itemBuilder: (BuildContext context, int idx) {
             for (dynamic name in stamp) {
-              if (animal_list[idx] == name) {
-                return StampTile(animalName: animal_list[idx]);
+              if (idx == get_animal_idx[name]) {
+                return StampTile(animalName: name);
               }
             }
             return StampTile(animalName: 'null');

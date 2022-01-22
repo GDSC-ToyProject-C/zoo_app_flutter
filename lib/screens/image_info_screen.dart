@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:maps_toolkit/maps_toolkit.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:tflite/tflite.dart';
+import '../data/firestore_data_control.dart';
 import 'dart:io';
 import '../custom_widget/custom_dialog.dart';
 import '../custom_widget/child_fab.dart';
@@ -26,10 +27,24 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
   late Future _getAnimalInfoOnce;
   @override
   void initState() {
-    _getAnimalInfoOnce = getAnimalInfo('');
+    _getAnimalInfoOnce = getAnimalInfo();
     // recognizeImage();
-    checkImage(); //이미지 체크(커스텀 다이얼로그 사용)
+
     super.initState();
+  }
+
+  Future<List> getAnimalInfo() async {
+    late List animalInfo = [];
+    String animalLink = '';
+    await checkImage().then((value) async {
+      if (value) {
+        animalLink = await getAnimalLink(_recognizedAnimal);
+        animalInfo.add(await getAnimalSumUpData(animalLink));
+        animalInfo.add(await getAnimalDesc(animalLink));
+      }
+    });
+
+    return animalInfo;
   }
 
   recognizeImage() async {
@@ -42,14 +57,20 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
       asynch: true,
     ).then((value) {
       setState(() {
-        _recognizedAnimal = (value as List)[0]['label'];
-        // _recognizedAnimal = value[];
-        print('recognitions: ${_recognizedAnimal}');
+        print(value);
+        if ((value as List)[0]['confidence'] > 0.6) {
+          //정확도가 60%이상일때만 성공
+          _recognizedAnimal = (value as List)[0]['label'];
+          print('recognitions: ${_recognizedAnimal}');
+        } else {
+          _recognizedAnimal = 'recog_fail';
+        }
+        print('recognized animal: ${_recognizedAnimal}');
       });
     });
   }
 
-  Future<void> checkImage() async {
+  Future<bool> checkImage() async {
     bool isInZoo;
     //ML 코드 여기에
     await recognizeImage();
@@ -60,18 +81,19 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return CustomDialog(
-          animalName: _recognizedAnimal,
+          animal: _recognizedAnimal,
           stampPossible: isInZoo,
         );
       },
     ).then((value) {
       setState(() {
+        print('is animal right: ${value}');
         _isAnimalRight = value;
         _showInfo = true;
       });
 
       if (isInZoo) {
-        showToast(_recognizedAnimal,
+        showToast(animal_list[get_animal_idx[_recognizedAnimal]!],
             widget.stampList.contains(_recognizedAnimal) ? true : false);
       }
     });
@@ -79,12 +101,12 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
       //go to mainpage
       Navigator.pop(context);
     }
+    return _isAnimalRight;
   }
 
   Future<bool> isUserInZoo() async {
     MyLocation myLct = MyLocation();
     await myLct.getMyCurrentLocation(); //자신의 위치 받아옴
-
     return await PolygonUtil.containsLocation(
       //지정한 다각형 안에 내가 있으면 true반환
       LatLng(myLct.Latit, myLct.Longit),
@@ -206,14 +228,11 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
                 if (snapshot.hasError) {
                   return Text('Error from get animal data');
                 } else if (snapshot.hasData && _isAnimalRight) {
-                  print((snapshot.data as List)[0].length);
-                  print((snapshot.data as List)[1].length);
-                  print((snapshot.data as List)[0].length +
-                      (snapshot.data as List)[1].length);
                   return ListView.builder(
                     shrinkWrap: true,
                     scrollDirection: Axis.vertical,
-                    physics: NeverScrollableScrollPhysics(),
+                    physics:
+                        NeverScrollableScrollPhysics(), //설명이 표시되는 리스트뷰는 스크롤X
                     itemCount: ((snapshot.data as List)[0].length) +
                         (snapshot.data as List)[1].length,
                     itemBuilder: (context, idx) {
@@ -260,6 +279,7 @@ class _ImageCheckScreenState extends State<ImageInfoScreen> {
       children: [
         Container(
           width: 312 * getScaleWidth(context),
+          constraints: BoxConstraints(maxHeight: 399 * getScaleHeight(context)),
           decoration: BoxDecoration(
             boxShadow: [
               BoxShadow(

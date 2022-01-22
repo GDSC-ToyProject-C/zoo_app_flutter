@@ -54,8 +54,8 @@ class _LoadingState extends State<Loading> with TickerProviderStateMixin {
 
   void _loadMlModel() async {
     var res = await Tflite.loadModel(
-      model: 'assets/model.tflite',
-      labels: 'assets/model.txt',
+      model: 'assets/model2.tflite',
+      labels: 'assets/model2.txt',
     ).whenComplete(() {
       setState(() {
         _modelStatus = true;
@@ -110,7 +110,7 @@ class _LoadingState extends State<Loading> with TickerProviderStateMixin {
                 ),
               ),
               Image.asset(
-                'images/giraffe.png',
+                'images/zoo.png',
                 width: 150 * getScaleWidth(context),
                 height: 150 * getScaleHeight(context),
               ),

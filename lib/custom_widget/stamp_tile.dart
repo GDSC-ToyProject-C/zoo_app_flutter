@@ -13,7 +13,7 @@ class StampTile extends StatelessWidget {
         //타일 백그라운드
         Container(
           width: 120 * getScaleWidth(context),
-          height: 134 * getScaleHeight(context),
+          height: 124 * getScaleHeight(context),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.all(Radius.circular(19)),
             boxShadow: [
@@ -33,7 +33,7 @@ class StampTile extends StatelessWidget {
             Container(
               margin: EdgeInsets.fromLTRB(0, 9, 0, 5),
               width: 100 * getScaleWidth(context),
-              height: 100 * getScaleHeight(context),
+              height: 90 * getScaleHeight(context),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.all(Radius.circular(19)),
                 color: const Color(0xfff8a442),
@@ -46,13 +46,15 @@ class StampTile extends StatelessWidget {
               ),
             ),
             Text(
-              animalName == 'null' ? '???' : animalName,
-              style: const TextStyle(
+              animalName == 'null'
+                  ? '???'
+                  : animal_list[get_animal_idx[animalName]!],
+              style: TextStyle(
                 color: const Color(0xff66491e),
                 fontWeight: FontWeight.w400,
                 fontFamily: "NotoSans",
                 fontStyle: FontStyle.normal,
-                fontSize: 10.0,
+                fontSize: 10.0 * getScaleHeight(context),
               ),
             ),
           ],
